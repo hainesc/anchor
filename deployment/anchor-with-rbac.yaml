@@ -1,0 +1,232 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: anchor-config
+  namespace: kube-system
+data:
+  # Configure this with the location of your etcd cluster.
+  etcd_endpoints: "" # "https://10.0.1.2:2379,https://10.0.1.3:2379"
+  # Configure the Secret below if etcd TLS enabled.
+  etcd_ca: ""   # "/anchor-secrets/etcd-ca"
+  etcd_cert: "" # "/anchor-secrets/etcd-cert"
+  etcd_key: ""  # "/anchor-secrets/etcd-key"
+
+  # Config this as the value you specify in kube-apiserver.
+  service_cluster_ip_range: "" # "10.96.0.0/12"
+  anchor_mode: "macvlan" # "macvlan or octopus"
+  # Create a macvlan interface at the node, Only centos 7.2+ tested.
+  create_macvlan: "" # "true" or "false"
+  # Configure it only when create_macvlan is true.
+  # Fields: hostname,master_interface,ip,gateway,mask. Use semicolon(;)
+  # to seperate multi items. Recently we only support one item per node
+  cluster_network: "" # "node01,eth0,10.0.2.8,10.0.2.1,24;node02,eth3.2,10.0.12.3,10.0.12.1,24"
+  # The CNI network configuration to install on each node.
+  cni_network_config: |-
+    {
+        "name": "anchor",
+        "cniVersion": "0.3.1",
+        "type": "__ANCHOR_MODE__",
+        "master": "__MACVLAN_INTERFACE__",
+        "octopus": {__OCTOPUS__},
+        "policy": {
+            "type": "k8s",
+            "k8s_api_root": "https://__KUBERNETES_SERVICE_HOST__:__KUBERNETES_SERVICE_PORT__",
+            "k8s_auth_token": "__SERVICEACCOUNT_TOKEN__"
+        },
+        "kubernetes": {
+            "kubeconfig": "__KUBECONFIG_FILEPATH__"
+        },
+        "ipam": {
+            "type": "anchor-ipam",
+            "etcd_endpoints": "__ETCD_ENDPOINTS__",
+            "etcd_key_file": "__ETCD_KEY_FILE__",
+            "etcd_cert_file": "__ETCD_CERT_FILE__",
+            "etcd_ca_cert_file": "__ETCD_CA_CERT_FILE__",
+            "service_ipnet": "__SERVICE_CLUSTER_IP_RANGE__",
+            "node_ips": [__NODE_IPS__],
+            "policy": {
+                "type": "k8s",
+                "k8s_api_root": "https://__KUBERNETES_SERVICE_HOST__:__KUBERNETES_SERVICE_PORT__",
+                "k8s_auth_token": "__SERVICEACCOUNT_TOKEN__"
+            },
+            "kubernetes": {
+                "kubeconfig": "__KUBECONFIG_FILEPATH__"
+            }
+        }
+    }
+
+---
+
+# The following contains k8s Secrets for use with a TLS enabled etcd cluster.
+# For information on populating Secrets, see http://kubernetes.io/docs/user-guide/secrets/
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: anchor-etcd-secrets
+  namespace: kube-system
+data:
+  # Populate the following files with etcd TLS configuration if desired, but leave blank if
+  # not using TLS for etcd.
+  # This self-hosted install expects three files with the following names.  The values
+  # should be base64 encoded strings of the entire contents of each file.
+  # etcd-key: null
+  # etcd-cert: null
+  # etcd-ca: null
+
+---
+
+# This manifest installs the anchor container, which install CNI plugins on each node.
+kind: DaemonSet
+apiVersion: extensions/v1beta1
+metadata:
+  name: anchor
+  namespace: kube-system
+  labels:
+    k8s-app: anchor
+spec:
+  selector:
+    matchLabels:
+      k8s-app: anchor
+  template:
+    metadata:
+      labels:
+        k8s-app: anchor
+    spec:
+      hostNetwork: true
+      serviceAccountName: anchor
+      # restartPolicy: Never
+      # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
+      # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
+      terminationGracePeriodSeconds: 0
+      containers:
+        # This container installs the anchor CNI binaries
+        # and CNI network config file on each node.
+        - name: anchor-install
+          image: docker.io/hainesc/anchor:v0.4.0
+          command: ["/install-cni.sh"]
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          env:
+            # The location of the Anchor etcd cluster.
+            - name: ETCD_ENDPOINTS
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: etcd_endpoints
+
+            - name: CREATE_MACVLAN
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: create_macvlan
+            - name: CLUSTER_NETWORK
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: cluster_network
+
+            # ETCD cert and key
+            - name: ETCD_CA
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: etcd_ca
+            - name: ETCD_CERT
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: etcd_cert
+            - name: ETCD_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: etcd_key
+            # Service cluster ip range
+            - name: SERVICE_CLUSTER_IP_RANGE
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: service_cluster_ip_range
+
+            - name: ANCHOR_MODE
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: anchor_mode
+
+            # The CNI network config to install on each node.
+            - name: CNI_NETWORK_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  name: anchor-config
+                  key: cni_network_config
+          volumeMounts:
+            - mountPath: /host/opt/cni/bin
+              name: cni-bin-dir
+            - mountPath: /host/etc/cni/net.d
+              name: cni-net-dir
+            - mountPath: /anchor-secrets
+              name: etcd-certs
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node.cloudprovider.kubernetes.io/uninitialized
+          value: "true"
+      volumes:
+        # Used to install CNI.
+        - name: cni-bin-dir
+          hostPath:
+            path: /opt/cni/bin
+        - name: cni-net-dir
+          hostPath:
+            path: /etc/cni/net.d
+        # Mount in the etcd TLS secrets.
+        - name: etcd-certs
+          secret:
+            secretName: anchor-etcd-secrets
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: anchor
+  namespace: kube-system
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: anchor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: anchor
+subjects:
+- kind: ServiceAccount
+  name: anchor
+  namespace: kube-system
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: anchor
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - nodes
+    verbs:
+      - get
+  - apiGroups: ["apps"]
+    resources:
+      - replicasets
+    verbs:
+      - get
