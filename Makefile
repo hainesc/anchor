@@ -30,7 +30,6 @@ anchor-image: anchor octopus
 monkey-image: monkey
 	$Q $(DOCKER) build -t monkey:$(VERSION) $(BUILD)/monkey
 
-# TODO: this will fmt or lint twice.
 anchor:
 	$Q mkdir -p $(BUILD)/anchor
 	$Q GOOS=$(GOOS) $(GO) build -o $(BUILD)/anchor/anchor cmd/anchor/anchor.go
@@ -110,9 +109,6 @@ test-coverage: fmt lint test-coverage-tools ; $(info $(M) running coverage tests
 .PHONY: lint
 lint: | $(GOLINT) ; $(info $(M) running golint...) @ ## Run golint
 	$Q $(GOLINT) -set_exit_status $(PKGS)
-
-.PHONY: binaries
-binaries: | $(ANCHOR) $(OCTOPUS) $(MONKEY) ; $(info $(M) build binaries...) @ ## Building
 
 .PHONY: fmt
 fmt: ; $(info $(M) running gofmt...) @ ## Run gofmt on all source files
