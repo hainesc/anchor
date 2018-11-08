@@ -37,7 +37,7 @@ data:
             "kubeconfig": "__KUBECONFIG_FILEPATH__"
         },
         "ipam": {
-            "type": "anchor-ipam",
+            "type": "anchor",
             "etcd_endpoints": "__ETCD_ENDPOINTS__",
             "etcd_key_file": "__ETCD_KEY_FILE__",
             "etcd_cert_file": "__ETCD_CERT_FILE__",

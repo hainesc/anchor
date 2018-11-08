@@ -136,7 +136,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	// 3. Get annotations from k8s_client via K8S_POD_NAME and K8S_POD_NAMESPACE.
-	_, annot, err := k8s.GetK8sPodInfo(k8sClient, string(k8sArgs.PodName), string(k8sArgs.PodNamespace))
+	_, annot, err := k8s.GetK8sPodInfo(k8sClient, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
 	if err != nil {
 		return fmt.Errorf("failed to read annotaions for pod " + err.Error())
 	}

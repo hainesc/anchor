@@ -34,7 +34,7 @@ type Kubernetes struct {
 type Args struct {
 	types.CommonArgs
 	IP                  net.IP
-	PodName             types.UnmarshallableString
-	PodNamespace        types.UnmarshallableString
-	PodInfraContainerID types.UnmarshallableString
+	K8S_POD_NAME               types.UnmarshallableString
+	K8S_POD_NAMESPACE          types.UnmarshallableString
+	K8S_POD_INFRA_CONTAINER_ID types.UnmarshallableString
 }

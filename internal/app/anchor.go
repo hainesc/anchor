@@ -101,8 +101,7 @@ func newAllocator(args *skel.CmdArgs, conf *config.IPAMConf) (*anchor.Allocator,
 	}
 
 	// 3. Get annotations from k8s_client via K8S_POD_NAME and K8S_POD_NAMESPACE.
-	label, annot, err := k8s.GetK8sPodInfo(runtime, string(k8sArgs.PodName),
-		string(k8sArgs.PodNamespace))
+	label, annot, err := k8s.GetK8sPodInfo(runtime, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
 	if err != nil {
 		return nil, err
 	}
@@ -117,13 +116,13 @@ func newAllocator(args *skel.CmdArgs, conf *config.IPAMConf) (*anchor.Allocator,
 
 	// It is friendly to show which controller the pods controled by.
 	// TODO: maybe it is meaningless. the pod name starts with the controller name.
-	controllerName, _ := k8s.ResourceControllerName(runtime, string(k8sArgs.PodName), string(k8sArgs.PodNamespace))
+	controllerName, _ := k8s.ResourceControllerName(runtime,  string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
 	if controllerName != "" {
 		customized["cni.anchor.org/controller"] = controllerName
 	}
 
-	return anchor.NewAllocator(store, string(k8sArgs.PodName),
-		string(k8sArgs.PodNamespace), customized)
+	return anchor.NewAllocator(store, string(k8sArgs.K8S_POD_NAME),
+		string(k8sArgs.K8S_POD_NAMESPACE), customized)
 }
 
 func newCleaner(args *skel.CmdArgs, ipamConf *config.IPAMConf) (*anchor.Cleaner, error) {
@@ -148,6 +147,6 @@ func newCleaner(args *skel.CmdArgs, ipamConf *config.IPAMConf) (*anchor.Cleaner,
 	}
 
 	return anchor.NewCleaner(store,
-		string(k8sArgs.PodName),
-		string(k8sArgs.PodNamespace))
+		string(k8sArgs.K8S_POD_NAME),
+		string(k8sArgs.K8S_POD_NAMESPACE))
 }

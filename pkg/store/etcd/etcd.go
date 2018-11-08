@@ -12,7 +12,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"reflect"
 	"strings"
 	"time"
 
@@ -99,30 +98,17 @@ func (e *Etcd) Close() error {
 
 // RetrieveGateway retrieves gateway for subnet.
 func (e *Etcd) RetrieveGateway(subnet *net.IPNet) net.IP {
-	resp, err := e.kv.Get(context.TODO(), gatewayPrefix, clientv3.WithPrefix())
+	resp, err := e.kv.Get(context.TODO(), gatewayPrefix + subnet.String())
 	if err != nil {
 		return nil
 	}
+	return net.ParseIP(string(resp.Kvs[0].Value))
 
-	for _, item := range resp.Kvs {
-		parts := strings.Split(string(item.Value), ",")
-		_, n, err := net.ParseCIDR(parts[0])
-		if err != nil {
-			// ommit the error.
-			continue
-		}
-		// TODO: if go-cmp better?
-		if reflect.DeepEqual(subnet, n) {
-			gw := net.ParseIP(parts[1])
-			return gw
-		}
-	}
-	return nil
 }
 
 // RetrieveAllocated retrieves allocated IPs in subnet for namespace.
 func (e *Etcd) RetrieveAllocated(namespace string, subnet *net.IPNet) (*utils.RangeSet, error) {
-	resp, err := e.kv.Get(context.TODO(), userPrefix+namespace)
+	resp, err := e.kv.Get(context.TODO(), userPrefix + namespace)
 	if err != nil {
 		return nil, err
 	}
