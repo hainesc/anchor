@@ -4,7 +4,7 @@ require (
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/containernetworking/cni v0.6.0
-	github.com/containernetworking/plugins v0.7.3
+	github.com/containernetworking/plugins v0.7.4
 	github.com/coreos/bbolt v1.3.0 // indirect
 	github.com/coreos/etcd v3.3.9+incompatible
 	github.com/coreos/go-iptables v0.4.0 // indirect
