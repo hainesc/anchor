@@ -177,7 +177,6 @@ func (a *Allocator) AddServiceRoute(ret *current.Result,
 func (a *Allocator) Allocate(id string) (*current.IPConfig, error) {
 	a.store.Lock()
 	defer a.store.Unlock()
-
 	ips, err := a.store.RetrieveAllocated(a.namespace, a.subnet)
 	if err != nil {
 		return nil, err

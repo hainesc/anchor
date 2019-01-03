@@ -99,11 +99,10 @@ func (e *Etcd) Close() error {
 // RetrieveGateway retrieves gateway for subnet.
 func (e *Etcd) RetrieveGateway(subnet *net.IPNet) net.IP {
 	resp, err := e.kv.Get(context.TODO(), gatewayPrefix + subnet.String())
-	if err != nil {
+	if err != nil || len(resp.Kvs) == 0 {
 		return nil
 	}
 	return net.ParseIP(string(resp.Kvs[0].Value))
-
 }
 
 // RetrieveAllocated retrieves allocated IPs in subnet for namespace.
