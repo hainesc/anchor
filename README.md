@@ -4,6 +4,10 @@ Some applications, especially legacy applications or applications which monitor 
 
 ## There comes anchor
 
+Anchor amis to be a Layer-2 CNI plugin based MacVLAN. See the picture below which shows the network topology of a kubernetes cluster with Anchor as its CNI plugin.
+
+![](docs/media/anchor_topology.png)
+
 Project anchor mainly contains four components, They are:
 
 * Anchor is an IPAM plugin following the [CNI SPEC](https://github.com/containernetworking/cni/blob/master/SPEC.md).
@@ -20,13 +24,17 @@ CNI(Container Network Interface), a CNCF project, consists of a specification an
 
 It is worth mentioning that kubernetes is just one of CNI runtimes, others including mesos, rkt, openshift, etc.
 
+The work flow of anchor running inside a kubernetes cluster shown as the picture below.
+
+![](docs/media/anchor_workflow.png)
+
 ## MacVLAN
 
 MacVLAN is a Linux network driver that exposes underlay or host interfaces directly to VMs or Containers running in the host.
 
 MacVLAN allows a single physical interface to have multiple MACs and ip addresses using MacVLAN sub-interfaces. MacVLAN interface is typically used for virtualization applications and each MacVLAN interface is connected to a Container or VM. Each container or VM can directly get DHCP address or IPAM address as the host would do. This would help customers who want Containers to be part of their traditional network with the IP addressing scheme that they already have.
 
-When using MacVLAN, the containers is **NOT** reachable to the underlying host interfaces as the packages are intentionally filtered by Linux for additional isolation. This does not meet the SPEC of CNI and causes *service* in k8s cannot work correnctly. To work around it, we create a new MacVLAN interface and steal the IP and network traffic from the host interface by changing the route table in the host. This work is designed to be done by installation script.
+When using MacVLAN, the containers is **NOT** reachable to the underlying host interfaces as the packages are intentionally filtered by Linux for additional isolation. This does not meet the SPEC of CNI and causes *service* in k8s cannot work correnctly. To work around it, we create a new MacVLAN interface named *acr1* as shown by the topology, the interface steals the IP and network traffic from the host interface by changing the route table in the host. This work is designed to be done by installation script.
 
 ## Installation
 
