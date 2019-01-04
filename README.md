@@ -92,7 +92,9 @@ There are three k-v stores used by the anchor ipam, they are:
 
 At the beginning, the stores are empty, so just input some data following the environment.
 
-I have created a WebUI named [Powder monkey](https://github.com/hainesc/powder) to display and operate the k-v stores. The frontend is written in Angular and the backend written in Golang.
+Make sure **export ETCDCTL_API=3** before run etcd cli, since Anchor uses etcd v3.
+
+I have created a WebUI named [Powder monkey](https://github.com/hainesc/powder) to display and operate the k-v stores. The frontend is written in Angular and the backend written in Golang. It is not beautiful since I am newbie to Angular but it works well.
 
 **Run example**
 
