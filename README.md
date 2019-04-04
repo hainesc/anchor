@@ -1,10 +1,22 @@
 # Anchor and Octopus
 
-Some applications, especially legacy applications or applications which monitor network traffic, expect to be directly connected to the physical network. In this type of situation, users hope using the macvlan network driver to assign a MAC address to each container’s virtual network interface, making it appear to be a physical network interface directly connected to the physical network. 
+In the network model of Kubernetes and many CNI plugins such as calico, it looks like that there is an assumption that each node has one and only one external network interface used to connect with outer. For Kubernetes, it does not listen to all interfaces. It picks the interface from route table with the default gateway and listens to that. And for calico, When calico/node is started, it determines the IP and subnet configuration following some stragies, after all, it uses only one network interface. Check the route table on the calico node to make sure that.
 
-## There comes anchor
+However, there are some scenarios that a node has multiple external interfaces, all of them are expected to be used to connect with outer. It is very common in the data center. Of course, we can bond them all into `bond0` and calico works well over it, there are no barriers for startups since that everything are newly built, the applications, the network, the firewall, the monitor systems, etc. On the other hand, for the company that are tens of years old, applications are designed to run on an isolate LAN. The IT infrastructures are designed to isolate applications by LAN, it does not work well.
 
-Anchor amis to be a Layer-2 CNI plugin based MacVLAN. See the picture below which shows the network topology of a kubernetes cluster with Anchor as its CNI plugin.
+In distributed system, there is a best practise that at network level, management panel should be **separated** from data panel to avoid that some applications run out of network bandwith, and the package of heart beat may be blocked by a long time, and it may run into a chaos.
+
+When the era of Kubernetes and container comes, the lack of network plugin with multiple LANs/interfaces support blocks them from running legacy applications on Kubernetes.
+
+## There come anchor and octopus
+
+Anchor is a Layer-2 CNI plugin based MacVLAN with multiple LANs/interfaces support. A new born container is attached to a special network interface, based on the LAN which it desires to be in. And via that interface, the container can connect with gateway, it is little different from adding a node to a given LAN, there is no NAT, no tunnel.
+
+For that purpose, it is straightful that the plugin should work at Layer-2 of network model. Newtork virtualization technique such as **Bridge** and **MacVLAN** can help us attaching the container to network interface. We prefer **MacVLAN** over Bridge for its perfermance.
+
+By using MacVLAN network driver, It can assign a MAC address to each container’s virtual network interface, making it appear to be a physical network interface directly connected to the physical network/gateway.
+
+See the picture below which shows the network topology of a kubernetes cluster with Anchor as its CNI plugin.
 
 ![](docs/media/anchor_topology.png)
 
@@ -12,7 +24,7 @@ Project anchor mainly contains four components, They are:
 
 * Anchor is an IPAM plugin following the [CNI SPEC](https://github.com/containernetworking/cni/blob/master/SPEC.md).
 
-* Octopus is a main plugin that extends [macvlan](https://github.com/containernetworking/plugins/blob/master/plugins/main/macvlan/macvlan.go) to support multiple masters on the node. It is useful when there are multiple VLANs in the cluster.
+* Octopus is a main plugin that extends [macvlan](https://github.com/containernetworking/plugins/blob/master/plugins/main/macvlan/macvlan.go) to support multiple network interfaces on the node. It is useful when there are multiple VLANs in the cluster.
 
 * Monkey is a WebUI that displays and operates the data used by anchor IPAM.
 
@@ -129,6 +141,10 @@ Anchor uses *annotations* written in the yaml for passing customized config as y
 | cni.anchor.org/routes | 10.88.0.0/16,10.0.1.5;10.99.1.0/24,10.0.1.7 | Add customized routes for the pod |
 
 The *cni.anchor.org/subnet* is **mandatory** since anchor cannot guess an IP if it don't know which VLAN the pod in.
+
+## Known Users
+
+Please let me know by posting a pull request with the logo of your company if you are using Anchor.
 
 ## TODO
 
