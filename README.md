@@ -156,7 +156,7 @@ Please let me know by posting a pull request with the logo of your company if yo
 
 If you find anchor is useful and helpful, please consider making a donation.
 
-* Bitcoin: 1HainescwMrDfay9cU1yWC6vc8ThZj8uAQ
+* Bitcoin: bc1qm0gxtwrzgqqmfsjqn8w37qc9hvdkva8xuxa00m
 * Alipay: zhinhai@gmail.com
 
 ![](docs/media/alipay.jpg)
